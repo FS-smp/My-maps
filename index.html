@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Peta Sederhana</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            padding: 0; 
+            height: 100vh;
+        }
+        #auth-section, #map-section {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        #map-section { display: none; }
+        #map { 
+            width: 100%; 
+            height: 70vh; 
+            border: 2px solid #4285F4;
+            border-radius: 8px;
+        }
+        button {
+            padding: 10px 15px;
+            background: #4285F4;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            margin: 10px;
+            cursor: pointer;
+        }
+        #logout-btn { background: #DB4437; }
+        #save-btn { background: #0F9D58; }
+    </style>
+</head>
+<body>
+    <!-- Bagian Login -->
+    <div id="auth-section">
+        <h1>🗺️ Aplikasi Peta Sederhana</h1>
+        <p>Login dengan Google untuk mulai menggunakan</p>
+        <div id="g_id_onload"
+            data-client_id="136555380983-d3sd8adsu144iohuejfadandb8nvk8ui.apps.googleusercontent.com"
+            data-callback="handleLogin">
+        </div>
+        <div class="g_id_signin" data-type="standard" data-size="large"></div>
+    </div>
+
+    <!-- Bagian Peta -->
+    <div id="map-section">
+        <button id="logout-btn">Logout</button>
+        <div id="map"></div>
+        <button id="save-btn">💾 Simpan Lokasi Ini</button>
+        <div id="saved-locations"></div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script>
+        let map, currentMarker, user;
+        
+        // Inisialisasi Peta
+        function initMap() {
+            map = L.map('map').setView([-6.2088, 106.8456], 13); // Default Jakarta
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap'
+            }).addTo(map);
+
+            // Klik untuk tandai lokasi
+            map.on('click', (e) => {
+                if (currentMarker) map.removeLayer(currentMarker);
+                currentMarker = L.marker([e.latlng.lat, e.latlng.lng])
+                    .addTo(map)
+                    .bindPopup(`📍 ${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)}`)
+                    .openPopup();
+            });
+        }
+
+        // Handle Login Google
+        function handleLogin(response) {
+            user = parseJwt(response.credential);
+            document.getElementById('auth-section').style.display = 'none';
+            document.getElementById('map-section').style.display = 'flex';
+            initMap();
+            alert(`Selamat datang, ${user.name}!`);
+        }
+
+        // Logout
+        document.getElementById('logout-btn').onclick = () => location.reload();
+
+        // Simpan Lokasi
+        document.getElementById('save-btn').onclick = () => {
+            if (!currentMarker) return alert("⚠️ Klik peta dulu untuk pilih lokasi!");
+            const latlng = currentMarker.getLatLng();
+            const lokasi = {
+                lat: latlng.lat,
+                lng: latlng.lng,
+                nama: prompt("Berikan nama lokasi:", `Lokasi ${new Date().toLocaleDateString()}`),
+                waktu: new Date().toISOString()
+            };
+            if (lokasi.nama) {
+                localStorage.setItem('lokasiTersimpan', JSON.stringify(lokasi));
+                alert("✅ Lokasi tersimpan!");
+            }
+        };
+
+        function parseJwt(token) {
+            return JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+        }
+    </script>
+</body>
+          </html>
